@@ -9,7 +9,6 @@ import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
 import android.os.Handler;
 import android.os.Looper;
-import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -27,20 +26,19 @@ import java.util.Random;
  */
 
 public class Loader extends ViewModel {
-    private String imageUrl = "https://i.imgur.com/tvGvMWL.jpg";
+    private String imageUrl = Conf.IMAGE_URL;
 
-    static final String TAG = "Loader";
+    private float mFontSize = Conf.FONT_SIZE;
 
-    private float mFontSize = 15;
+    private Handler mUiHandler = new Handler(Looper.getMainLooper());
 
-    Handler mUiHandler = new Handler(Looper.getMainLooper());
+    MutableLiveData<Boolean> loading = new MutableLiveData<>();
+    MutableLiveData<Bitmap> inputLiveData = new MutableLiveData<>();
+    MutableLiveData<Bitmap> outputLiveData = new MutableLiveData<>();
 
-    MutableLiveData<Bitmap> bitmapMutableLiveData = new MutableLiveData<>();
-    MutableLiveData<Bitmap> resultMutableLiveData = new MutableLiveData<>();
+    private Context mContext;
 
-    Context mContext;
-
-    String charset = "`^\",:;Il!i~+_a-?qQrRtYhtTyh]SvV[}dsf{1)(|\\/tfjrxnuvczXYUJCLQ0OZmwqpdbkhao*#MW&8%B@$";
+    private String charset = "`^\",:;Il!i~+_a-?qQrRtYhtTyh]SvV[}dsf{1)(|\\/tfjrxnuvczXYUJCLQ0OZmwqpdbkhao*#MW&8%B@$";
 
 
     public Loader(Context c) {
@@ -48,14 +46,14 @@ public class Loader extends ViewModel {
     }
 
     public void fetchBitmap() {
-        Log.d(TAG, "fetchbitmap");
+        loading.setValue(true);
         Glide.with(mContext.getApplicationContext())
                 .asBitmap()
                 .load(imageUrl)
                 .into(new CustomTarget<Bitmap>() {
                     @Override
                     public void onResourceReady(@NonNull Bitmap resource, @Nullable Transition<? super Bitmap> transition) {
-                        bitmapMutableLiveData.setValue(resource);
+                        inputLiveData.setValue(resource);
                         bitmapToString(resource);
                     }
 
@@ -67,7 +65,7 @@ public class Loader extends ViewModel {
     }
 
 
-    public void bitmapToString(Bitmap bitmap) {
+    private void bitmapToString(Bitmap bitmap) {
         final Bitmap bit = bitmap;
         new Thread(() -> {
             int w = bit.getWidth();
@@ -112,23 +110,26 @@ public class Loader extends ViewModel {
 
             final Bitmap result = generatedBitmap;
 
-            mUiHandler.post(() -> resultMutableLiveData.setValue(result));
+            mUiHandler.post(() -> {
+                loading.setValue(false);
+                outputLiveData.setValue(result);
+            });
         }).start();
     }
 
 
     private Pixel getPixelColor(int x, int y, Bitmap bitmap) {
 
-        int pix = bitmap.getPixel(x,y);
+        int pix = bitmap.getPixel(x, y);
         int r = Color.red(pix);
         int g = Color.green(pix);
         int b = Color.blue(pix);
 
-        return new Pixel(r,g,b);
+        return new Pixel(r, g, b);
 
     }
 
-    public String getRandomChar() {
+    private String getRandomChar() {
         return charset.charAt(new Random().nextInt(charset.length() - 1)) + "";
     }
 

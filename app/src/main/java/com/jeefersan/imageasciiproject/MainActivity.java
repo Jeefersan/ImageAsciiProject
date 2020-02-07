@@ -1,46 +1,65 @@
 package com.jeefersan.imageasciiproject;
 
 import android.os.Bundle;
+import android.view.View;
 import android.widget.Button;
-import android.widget.ImageView;
+import android.widget.ProgressBar;
 
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.davemorrissey.labs.subscaleview.ImageSource;
-import com.davemorrissey.labs.subscaleview.SubsamplingScaleImageView;
+import com.github.chrisbanes.photoview.PhotoView;
+
 
 public class MainActivity extends AppCompatActivity {
+    final String TAG = "MainActivity";
 
-    static final String TAG = "MainActivity";
-
-    private Loader loader;
-    private ImageView imageView;
-    private SubsamplingScaleImageView result;
-    private Button button;
+    private Loader mLoader;
+    private PhotoView mOutput;
+    private PhotoView mInput;
+    private Button mStartBtn;
+    private ProgressBar progressBar;
 
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        this.imageView = findViewById(R.id.imageView);
-        this.button = findViewById(R.id.button);
-        this.result = findViewById(R.id.imageView2);
-        loader = new Loader(this);
-        button.setOnClickListener(v -> loadData());
+        this.mStartBtn = findViewById(R.id.start);
+        this.mInput = findViewById(R.id.input);
+        this.mOutput = findViewById(R.id.output);
+        this.progressBar = findViewById(R.id.progress_bar);
+        mLoader = new Loader(this);
+        mStartBtn.setOnClickListener(v -> loadData());
         observeViewModel();
     }
 
-    public void loadData() {
-
-        loader.fetchBitmap();
+    private void loadData() {
+        mLoader.fetchBitmap();
 
     }
 
 
-    public void observeViewModel() {
-        loader.bitmapMutableLiveData.observe(this, bitmap -> imageView.setImageBitmap(bitmap));
-        loader.resultMutableLiveData.observe(this, bitmap -> result.setImage(ImageSource.bitmap(bitmap)));
+    private void observeViewModel() {
+        mLoader.loading.observe(this, isLoading -> {
+            if (isLoading != null) {
+                progressBar.setVisibility(isLoading ? View.VISIBLE : View.GONE);
+                if (isLoading) {
+                    mOutput.setVisibility(View.GONE);
+                }
+            }
+        });
+        mLoader.inputLiveData.observe(this, input -> {
+            if (input != null) {
+                mInput.setImageBitmap(input);
+            }
+        });
+        mLoader.outputLiveData.observe(this, output -> {
+            if (output != null) {
+                mOutput.setVisibility(View.VISIBLE);
+                mOutput.setImageBitmap(output);
+            }
+        });
+
 
     }
 
